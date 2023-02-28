@@ -11,9 +11,9 @@ import (
 )
 
 type GrowiClientOption struct {
-	url      *url.URL
-	username string
-	password string
+	URL      *url.URL
+	Username string
+	Password string
 }
 
 type GrowiClient struct {
@@ -31,11 +31,11 @@ func Init(option *GrowiClientOption) (*GrowiClient, error) {
 	client = &http.Client{}
 	client.Jar = jar
 
-	csrfToken, err := getCsrfToken(*option.url, *client)
+	csrfToken, err := getCsrfToken(*option.URL, *client)
 	if err != nil {
 		return nil, errors.New("failed to get csrf token")
 	}
-	err = doLogin(*option.url, *client, option.username, option.password, csrfToken)
+	err = doLogin(*option.URL, *client, option.Username, option.Password, csrfToken)
 	if err != nil {
 		return nil, errors.New("failed to login")
 	}
