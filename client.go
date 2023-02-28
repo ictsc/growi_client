@@ -17,7 +17,7 @@ type GrowiClientOption struct {
 }
 
 type GrowiClient struct {
-	option *GrowiClientOption
+	Option *GrowiClientOption
 }
 
 var client *http.Client
@@ -40,7 +40,7 @@ func Init(option *GrowiClientOption) (*GrowiClient, error) {
 		return nil, errors.New("failed to login")
 	}
 
-	return &GrowiClient{option: option}, nil
+	return &GrowiClient{Option: option}, nil
 }
 
 // getCsrfToken は CSRF Token を取得する
