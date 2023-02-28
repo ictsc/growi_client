@@ -22,7 +22,7 @@ type GrowiClient struct {
 
 var client *http.Client
 
-func Init(option *GrowiClientOption) (*GrowiClient, error) {
+func (c *GrowiClient) Init() (*GrowiClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
@@ -31,16 +31,16 @@ func Init(option *GrowiClientOption) (*GrowiClient, error) {
 	client = &http.Client{}
 	client.Jar = jar
 
-	csrfToken, err := getCsrfToken(*option.URL, *client)
+	csrfToken, err := getCsrfToken(*c.Option.URL, *client)
 	if err != nil {
 		return nil, errors.New("failed to get csrf token")
 	}
-	err = doLogin(*option.URL, *client, option.Username, option.Password, csrfToken)
+	err = doLogin(*c.Option.URL, *client, c.Option.Username, c.Option.Password, csrfToken)
 	if err != nil {
 		return nil, errors.New("failed to login")
 	}
 
-	return &GrowiClient{Option: option}, nil
+	return &GrowiClient{Option: c.Option}, nil
 }
 
 // getCsrfToken は CSRF Token を取得する
