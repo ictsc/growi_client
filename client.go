@@ -20,19 +20,15 @@ type GrowiClientOption struct {
 }
 
 type GrowiClient struct {
+	Jar    *cookiejar.Jar
 	Option *GrowiClientOption
 }
 
 var client *http.Client
 
 func (c *GrowiClient) Init() error {
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return err
-	}
-
 	client = &http.Client{}
-	client.Jar = jar
+	client.Jar = c.Jar
 
 	csrfToken, err := getCsrfToken(*c.Option.URL, *client)
 	if err != nil {
@@ -83,6 +79,45 @@ func (c *GrowiClient) GetSubordinatedPage(path string) ([]entity.SubordinatedPag
 	}
 
 	return subordinatedPagesResponse.SubordinatedPages, nil
+}
+
+type PageResponse struct {
+	Page entity.Page `json:"page"`
+}
+
+func (c *GrowiClient) GetPage(path string) (*entity.Page, error) {
+	u := *c.Option.URL
+	u.Path = "_api/v3/page"
+
+	q := u.Query()
+	q.Set("access_token", c.Option.AccessToken)
+	q.Set("path", path)
+
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var pageResponse PageResponse
+	err = json.Unmarshal(body, &pageResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pageResponse.Page, nil
 }
 
 // getCsrfToken は CSRF Token を取得する
