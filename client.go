@@ -1,7 +1,9 @@
 package growi_client
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/ictsc/growi_client/entity"
 	"golang.org/x/net/html"
 	"io/ioutil"
 	"net/http"
@@ -11,9 +13,10 @@ import (
 )
 
 type GrowiClientOption struct {
-	URL      *url.URL
-	Username string
-	Password string
+	URL         *url.URL
+	Username    string
+	Password    string
+	AccessToken string
 }
 
 type GrowiClient struct {
@@ -22,10 +25,10 @@ type GrowiClient struct {
 
 var client *http.Client
 
-func (c *GrowiClient) Init() (*GrowiClient, error) {
+func (c *GrowiClient) Init() error {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	client = &http.Client{}
@@ -33,14 +36,53 @@ func (c *GrowiClient) Init() (*GrowiClient, error) {
 
 	csrfToken, err := getCsrfToken(*c.Option.URL, *client)
 	if err != nil {
-		return nil, errors.New("failed to get csrf token")
+		return errors.New("failed to get csrf token")
 	}
 	err = doLogin(*c.Option.URL, *client, c.Option.Username, c.Option.Password, csrfToken)
 	if err != nil {
-		return nil, errors.New("failed to login")
+		return errors.New("failed to login")
 	}
 
-	return &GrowiClient{Option: c.Option}, nil
+	return nil
+}
+
+type SubordinatedPagesResponse struct {
+	SubordinatedPages []entity.SubordinatedPage `json:"subordinatedPages"`
+}
+
+func (c *GrowiClient) GetSubordinatedPage(path string) ([]entity.SubordinatedPage, error) {
+	u := *c.Option.URL
+	u.Path = "_api/v3/pages/subordinated-list"
+
+	q := u.Query()
+	q.Set("access_token", c.Option.AccessToken)
+	q.Set("path", path)
+
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var subordinatedPagesResponse SubordinatedPagesResponse
+	err = json.Unmarshal(body, &subordinatedPagesResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return subordinatedPagesResponse.SubordinatedPages, nil
 }
 
 // getCsrfToken は CSRF Token を取得する
