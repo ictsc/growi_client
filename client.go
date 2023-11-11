@@ -12,6 +12,12 @@ import (
 	"strings"
 )
 
+type Client interface {
+	Init() error
+	GetSubordinatedPage(path string) ([]entity.SubordinatedPage, error)
+	GetPage(path string) (*entity.Page, error)
+}
+
 type GrowiClientOption struct {
 	URL         *url.URL
 	Username    string
@@ -25,6 +31,8 @@ type GrowiClient struct {
 }
 
 var client *http.Client
+
+var _ Client = (*GrowiClient)(nil)
 
 func (c *GrowiClient) Init() error {
 	client = &http.Client{}
